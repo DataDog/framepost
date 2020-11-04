@@ -186,7 +186,11 @@ export abstract class SharedClient<C> {
     }
 
     protected async messageListener(ev: MessageEvent<Message>) {
-        await this.channel.promise;
+        try {
+            await this.channel.promise;
+        } catch (e) {
+            // if handshake fails, do nothing
+        }
 
         const isValidMessage = this.isValidMessage(ev);
 
