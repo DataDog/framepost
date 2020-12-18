@@ -4,6 +4,7 @@ import {
     REQUEST_TIMEOUT,
     MessageAPIVersion
 } from './constants';
+import { HandshakeTimeoutError, RequestTimeoutError } from './errors';
 import { Logger } from './logger';
 import { Profiler, getProfiler } from './profiler';
 import type {
@@ -142,7 +143,7 @@ export abstract class SharedClient<C> {
 
             timer = setTimeout(() => {
                 unsubscribeResponseHandler();
-                reject('Request timed out');
+                reject(new RequestTimeoutError());
             }, this.requestTimeout);
         });
     }
@@ -291,7 +292,7 @@ export abstract class SharedClient<C> {
 
     protected setInitTimer() {
         this.initTimer = setTimeout(() => {
-            this.channel.reject('Handshake timed out');
+            this.channel.reject(new HandshakeTimeoutError());
             this.destroy();
         }, this.requestTimeout);
     }
