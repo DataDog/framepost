@@ -17,26 +17,32 @@ export class ParentClient<C = any> extends SharedClient<C> {
      * Request a channel with the child client. Must be called after child
      * frame is fully loaded.
      */
-    requestChannel<T>(frame: HTMLIFrameElement, context: T) {
-        this.url = new URL(frame.src);
+    requestChannel<T>(frame: HTMLIFrameElement | Window, context: T) {
+        console.log('xxx requestChannel', frame)
+        if( frame instanceof HTMLIFrameElement)
+        {
+            this.url = new URL(frame.src);
+            if (frame.contentWindow) {
+                const messageChannel = new MessageChannel();
 
-        if (frame.contentWindow) {
-            const messageChannel = new MessageChannel();
+                this.messagePort = messageChannel.port1;
 
-            this.messagePort = messageChannel.port1;
+                const message = this.getInitMessage(context);
 
-            const message = this.getInitMessage(context);
+                this.messagePort.onmessage = this.initListener.bind(this);
 
-            this.messagePort.onmessage = this.initListener.bind(this);
+                this.setInitTimer();
 
-            this.setInitTimer();
+                frame.contentWindow.postMessage(message, this.url.origin, [
+                    messageChannel.port2
+                ]);
 
-            frame.contentWindow.postMessage(message, this.url.origin, [
-                messageChannel.port2
-            ]);
+                this.profiler.logEvent(ProfileEventType.POST_MESSAGE, message);
+            }
+        } else {
 
-            this.profiler.logEvent(ProfileEventType.POST_MESSAGE, message);
         }
+        
     }
 
     async getMessageProfile(): Promise<MessageProfile[]> {
