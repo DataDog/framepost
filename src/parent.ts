@@ -19,12 +19,16 @@ export class ParentClient<C = any> extends SharedClient<C> {
      */
     requestChannel<T>(frame: HTMLIFrameElement, context: T) {
         if (frame.contentWindow) {
-            this.handleRequstChannel<T>(frame.contentWindow, frame.src, context);
+            this.handleRequstChannel<T>(
+                frame.contentWindow,
+                frame.src,
+                context
+            );
         }
     }
 
     /**
-     * Request a channel with the child client in a new tab or a new window opened with window.open(). 
+     * Request a channel with the child client in a new tab or a new window opened with window.open().
      * Must be called after the popup has fully loaded, if not blocked by a popup blocker.
      */
     requestChannelWithPopup<T>(targetWindow: Window, url: string, context: T) {
@@ -33,7 +37,11 @@ export class ParentClient<C = any> extends SharedClient<C> {
         }
     }
 
-    private handleRequstChannel<T>(targetWindow: Window, url: string, context: T) {
+    private handleRequstChannel<T>(
+        targetWindow: Window,
+        url: string,
+        context: T
+    ) {
         this.url = new URL(url);
 
         const messageChannel = new MessageChannel();
