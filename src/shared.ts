@@ -221,8 +221,9 @@ export abstract class SharedClient<C> {
     /**
      * Rejects if the handshake process has failed
      */
-    async handshake() {
-        await this.channel.promise;
+    async handshake(): Promise<C> {
+        const { context } = await this.channel.promise;
+        return context;
     }
 
     protected async messageListener(ev: MessageEvent<Message>) {
