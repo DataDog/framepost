@@ -75,7 +75,16 @@ export abstract class SharedClient<C> {
     /**
      * Sends an event to the opposite client
      */
-    async send<T = any>(eventType: string, data: T): Promise<Message<T>> {
+    async send<T = any>(
+        eventType: string,
+        data: T
+    ): Promise<Message<T> | null> {
+        try {
+            await this.handshake();
+        } catch (e) {
+            return null;
+        }
+
         return this.postMessage(MessageType.EVENT, eventType, data);
     }
 
@@ -163,6 +172,8 @@ export abstract class SharedClient<C> {
             requestMessage: Message<Q>
         ) => {
             try {
+                await this.handshake();
+
                 const response = await requestHandler(
                     requestData,
                     requestMessage
@@ -195,11 +206,23 @@ export abstract class SharedClient<C> {
     }
 
     /**
-     * Returns the context provided by the opposite client.
+     * Returns the context provided by the opposite client, or null
+     * if the handshake process fails
      */
-    async getContext(): Promise<C> {
-        const { context } = await this.channel.promise;
-        return context;
+    async getContext(): Promise<C | null> {
+        try {
+            const { context } = await this.channel.promise;
+            return context;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Rejects if the handshake process has failed
+     */
+    async handshake() {
+        await this.channel.promise;
     }
 
     protected async messageListener(ev: MessageEvent<Message>) {
