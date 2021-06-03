@@ -7,8 +7,6 @@ import { profileMessages } from './utils';
 export interface ParentClientOptions extends SharedClientOptions {}
 
 export class ParentClient<C = any> extends SharedClient<C> {
-    private url?: URL;
-
     constructor(options: ParentClientOptions = {}) {
         super(options);
     }
@@ -17,48 +15,26 @@ export class ParentClient<C = any> extends SharedClient<C> {
      * Request a channel with a child client in an iframe. Must be called after child
      * frame is fully loaded.
      */
-    requestChannel<T>(frame: HTMLIFrameElement, context: T) {
-        if (frame.contentWindow) {
-            this.handleRequstChannel<T>(
-                frame.contentWindow,
-                frame.src,
-                context
+    requestChannel<T>(targetWindow: Window | null, context: T) {
+        if (targetWindow) {
+            const messageChannel = new MessageChannel();
+
+            this.messagePort = messageChannel.port1;
+
+            const message = this.getInitMessage(context);
+
+            this.messagePort.onmessage = this.initListener.bind(this);
+
+            this.setInitTimer();
+
+            targetWindow.postMessage(message, '*', [messageChannel.port2]);
+
+            this.profiler.logEvent(ProfileEventType.POST_MESSAGE, message);
+        } else {
+            this.logger.error(
+                'Not initializing channel: contentWindow object was null'
             );
         }
-    }
-
-    /**
-     * Request a channel with the child client in a new tab or a new window opened with window.open().
-     * Must be called after the popup has fully loaded, if not blocked by a popup blocker.
-     */
-    requestChannelWithPopup<T>(targetWindow: Window, url: string, context: T) {
-        if (targetWindow.opener) {
-            this.handleRequstChannel<T>(targetWindow, url, context);
-        }
-    }
-
-    private handleRequstChannel<T>(
-        targetWindow: Window,
-        url: string,
-        context: T
-    ) {
-        this.url = new URL(url);
-
-        const messageChannel = new MessageChannel();
-
-        this.messagePort = messageChannel.port1;
-
-        const message = this.getInitMessage(context);
-
-        this.messagePort.onmessage = this.initListener.bind(this);
-
-        this.setInitTimer();
-
-        targetWindow.postMessage(message, this.url.origin, [
-            messageChannel.port2
-        ]);
-
-        this.profiler.logEvent(ProfileEventType.POST_MESSAGE, message);
     }
 
     async getMessageProfile(): Promise<MessageProfile[]> {

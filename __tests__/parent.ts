@@ -170,7 +170,7 @@ describe('client', () => {
     test('Sends a channel init message to the provided iframe on client.requestChannel', () => {
         const client = new ParentClient();
 
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         expect(mockFrame.contentWindow?.postMessage).toHaveBeenCalledTimes(1);
 
@@ -198,7 +198,7 @@ describe('client.getContext()', () => {
     test('Returns null if handshake fails. Does not reject', async () => {
         const client = new ParentClient({ requestTimeout: 200 });
 
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         const context = await client.getContext();
 
@@ -208,7 +208,7 @@ describe('client.getContext()', () => {
     test('Resolves requests after receiving context from child client', async () => {
         const client = new ParentClient<ChildContext>();
 
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         mockInitResponseFromChild();
 
@@ -222,7 +222,7 @@ describe('client.handshake()', () => {
     test('Rejects queued requests after timeout', async () => {
         const client = new ParentClient({ requestTimeout: 200 });
 
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         let rejected = false;
 
@@ -247,7 +247,7 @@ describe('client.on()', () => {
         client.on('event1', callback1);
         client.on('event1', callback2);
 
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         mockInitResponseFromChild();
 
@@ -271,7 +271,7 @@ describe('client.on()', () => {
         client.on('event1', callback1);
         const unsubscribe = client.on('event1', callback2);
 
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         mockInitResponseFromChild();
 
@@ -295,7 +295,7 @@ describe('client.send()', () => {
         client.send('event1', 'data1');
         expect(mockMessageChannel.port1.postMessage).not.toHaveBeenCalled();
 
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         client.send('event2', 'data2');
         expect(mockMessageChannel.port1.postMessage).not.toHaveBeenCalled();
@@ -338,7 +338,7 @@ describe('client.send()', () => {
 
     test('Serializes error instances when sent with postMessage', async () => {
         const client = new ParentClient<ChildContext>();
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         const error1 = new Error('error1');
         client.send('event1', error1);
@@ -388,7 +388,7 @@ describe('client.send()', () => {
             requestTimeout: 200
         });
 
-        client.requestChannel(frame, parentContext);
+        client.requestChannel(frame.contentWindow, parentContext);
 
         const message = await client.send('event1', 'data');
 
@@ -405,7 +405,7 @@ test('Executes response handlers on appropriate request messages, returning retu
 
     client.onRequest('request1', callback1);
 
-    client.requestChannel(frame, parentContext);
+    client.requestChannel(frame.contentWindow, parentContext);
 
     mockInitResponseFromChild();
 
@@ -434,7 +434,7 @@ test('Provides an unsubscribe hook for request handlers', async () => {
 
     const unsubscribe = client.onRequest('request1', callback1);
 
-    client.requestChannel(frame, parentContext);
+    client.requestChannel(frame.contentWindow, parentContext);
 
     mockInitResponseFromChild();
 
@@ -450,7 +450,7 @@ test('Provides an unsubscribe hook for request handlers', async () => {
 test('Resovles with data returned from handlers subscribed in the child client', async () => {
     const client = new ParentClient<ChildContext>();
 
-    client.requestChannel(frame, parentContext);
+    client.requestChannel(frame.contentWindow, parentContext);
     mockInitResponseFromChild();
 
     await flushPromises();
@@ -469,7 +469,7 @@ test('Resovles with data returned from handlers subscribed in the child client',
 test('Rejects with data thrown from handlers subscribed in parent client', async () => {
     const client = new ParentClient<ChildContext>();
 
-    client.requestChannel(frame, parentContext);
+    client.requestChannel(frame.contentWindow, parentContext);
     mockInitResponseFromChild();
 
     await flushPromises();
@@ -494,7 +494,7 @@ test('Rejects with data thrown from handlers subscribed in parent client', async
 test('Propagates errors thrown from request handlers', async () => {
     const client = new ParentClient<ChildContext>();
 
-    client.requestChannel(frame, parentContext);
+    client.requestChannel(frame.contentWindow, parentContext);
     mockInitResponseFromChild();
 
     await flushPromises();
@@ -527,7 +527,7 @@ test('Sends requests to child client after channel is established', async () => 
     client.request('event1', 'data1');
     expect(mockMessageChannel.port1.postMessage).not.toHaveBeenCalled();
 
-    client.requestChannel(frame, parentContext);
+    client.requestChannel(frame.contentWindow, parentContext);
 
     client.request('event2', 'data2');
     expect(mockMessageChannel.port1.postMessage).not.toHaveBeenCalled();
@@ -571,7 +571,7 @@ test('Sends requests to child client after channel is established', async () => 
 test('Rejects unhandled requests after a timeout', async () => {
     const client = new ParentClient<ChildContext>({ requestTimeout: 200 });
 
-    client.requestChannel(frame, parentContext);
+    client.requestChannel(frame.contentWindow, parentContext);
     mockInitResponseFromChild();
 
     await flushPromises();
@@ -591,7 +591,7 @@ test('Rejects unhandled requests after a timeout', async () => {
 test('Closes message port on calls to `destroy()`', () => {
     const client = new ParentClient<ChildContext>();
 
-    client.requestChannel(frame, parentContext);
+    client.requestChannel(frame.contentWindow, parentContext);
 
     client.destroy();
 

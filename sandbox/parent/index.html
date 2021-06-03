@@ -7,21 +7,24 @@
         <h1>FramePost Parent: Parent</h1>
         <iframe
             id="frame"
-            sandbox="allow-scripts allow-same-origin allow-forms"
+            sandbox="allow-scripts allow-forms"
             src="http://localhost:8001"
         ></iframe>
         <script src="dist/framepost.min.js"></script>
         <script>
             const frame = document.getElementById('frame');
+
             const client = new framepost.ParentClient({
                 debug: true,
                 profile: true
             });
+
             client
                 .getContext()
                 .then(context =>
                     console.log('Channel established with child', context)
                 );
+
             client.on('up', data =>
                 console.log('received event from child', data)
             );
