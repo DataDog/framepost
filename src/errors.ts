@@ -17,3 +17,11 @@ export class RequestTimeoutError extends Error {
         this.name = 'RequestTimeoutError';
     }
 }
+
+export class ClientDestroyedError extends Error {
+    constructor() {
+        super('Client destroyed');
+
+        this.name = 'ClientDestroyedError';
+    }
+}

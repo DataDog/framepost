@@ -21,6 +21,8 @@ export const defer = <T>(): Deferred<T> => {
         reject = rej;
     });
 
+    promise.catch(e => e);
+
     return {
         resolve,
         reject,
