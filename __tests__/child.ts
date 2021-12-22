@@ -143,10 +143,6 @@ beforeEach(() => {
     };
 });
 
-afterEach(() => {
-    client.destroy();
-});
-
 const flushPromises = () => new Promise(setImmediate);
 
 describe('client', () => {
@@ -206,6 +202,25 @@ describe('client.handshake()', () => {
         client = new ChildClient({
             requestTimeout: 200
         });
+
+        let rejected = false;
+
+        await new Promise(resolve => {
+            client.handshake().catch(() => {
+                rejected = true;
+                resolve(undefined);
+            });
+        });
+
+        expect(rejected).toBe(true);
+    });
+
+    test('Rejects after client is destroyed', async () => {
+        client = new ChildClient<ParentContext>();
+
+        mockInitMessageFromParent();
+
+        client.destroy();
 
         let rejected = false;
 
@@ -439,7 +454,7 @@ test('Rejects with data thrown from handlers subscribed in parent client', async
         mockErrorResponseFromChild('request', 'errorResponseData', requestId);
     }, 500);
 
-    let response = '';
+    let response: unknown = '';
 
     try {
         await client.request('request', 'requestData');
@@ -476,7 +491,7 @@ test('Propagates errors thrown from request handlers', async () => {
     }
 
     expect(response).toBeInstanceOf(Error);
-    expect(response.message).toBe('errorResponseData');
+    expect((response as Error).message).toBe('errorResponseData');
 });
 
 test('Sends requests to child client after channel is established', async () => {
@@ -531,14 +546,65 @@ test('Rejects unhandled requests after a timeout', async () => {
     expect(rejected).toBe(true);
 });
 
-test('Closes message port on calls to `destroy()`', async () => {
-    client = new ChildClient<ChildContext>();
+describe('client.destroy()', () => {
+    test('Closes message port on calls to `destroy()`', async () => {
+        client = new ChildClient<ChildContext>();
 
-    mockInitMessageFromParent();
+        mockInitMessageFromParent();
 
-    await flushPromises();
+        await flushPromises();
 
-    client.destroy();
+        client.destroy();
 
-    expect(mockMessageChannel.port2.close).toHaveBeenCalled();
+        expect(mockMessageChannel.port2.close).toHaveBeenCalled();
+    });
+
+    test('Rejects handshake if it has not been completed', async () => {
+        client = new ChildClient<ChildContext>();
+
+        client.destroy();
+
+        let rejected = false;
+
+        await new Promise(resolve => {
+            client.handshake().catch(() => {
+                rejected = true;
+                resolve(undefined);
+            });
+        });
+
+        expect(rejected).toBe(true);
+    });
+
+    test('Rejects all unresolved requests', async () => {
+        client = new ChildClient<ChildContext>();
+        mockInitMessageFromParent();
+
+        const r1 = client.request('request1', 'data1');
+
+        let rejected1 = false;
+        let rejected2 = false;
+
+        client.destroy();
+
+        // doing one after 'destroy' to test that new requests also fail
+        const r2 = client.request('request2', 'data2');
+
+        await new Promise(resolve => {
+            r1.catch(() => {
+                rejected1 = true;
+                resolve(undefined);
+            });
+        });
+
+        await new Promise(resolve => {
+            r2.catch(() => {
+                rejected2 = true;
+                resolve(undefined);
+            });
+        });
+
+        expect(rejected1).toBe(true);
+        expect(rejected2).toBe(true);
+    });
 });
